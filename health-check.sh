@@ -275,9 +275,7 @@ note() {
 }
 
 log_rotate() {
- local content="/var/log/health-report/health-check-report-* {
-           weekly
-           rotate 10
+ local content="/var/log/health-report/health-check-report-*.txt {                      
            missingok
            compress
            maxage 90
