@@ -29,8 +29,8 @@ else
   echo "HC_USR_SBIN_PATH not set, set it with -b"
 fi
 
-if [ "$HC_VERBOSE" == "y" ]; then
-  echo "COLOR is set, default"
+if [ "$HC_VERBOSE" !== "bash" ]; then
+  echo "COLOR is set to bash, default"
 else
-  echo "COLOR is not set, probably -e or -c passed"
+  echo "COLOR can be none,bash,html"
 fi

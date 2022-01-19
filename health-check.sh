@@ -12,7 +12,7 @@
 
 ##---------- Author : Vladimir Bazović ----------------------------##
 ##  Added privilegies check.
-##  Color switch
+##  Color options: none, bash, html
 ##  Output to file
 ##  Email
 ##  Setup procedure
@@ -33,7 +33,7 @@ echo_usage() {
     echo "    b) set /usr/sbin path for plugins"
     echo "    f) output to file"
     echo "    e) send email (output to file is set also)"
-    echo "    c) no color in output"
+    echo "    c) specifify type of color in output: none, bash or html  "
     echo "    s) setup system"
     echo "    p) install core plugin "
     echo "    u) uninstall prugin "
@@ -41,9 +41,7 @@ echo_usage() {
 }
 
 #------variables and parameters handling------#
-S="************************************"
-D="-------------------------------------"
-COLOR="y"
+COLOR="bash"
 OUTPUT_TO_FILE=false
 SEND_EMAIL=false
 SETUP_MODE=false
@@ -58,12 +56,12 @@ usage_plugins() {
 
 
 # process parameters
-while getopts "hvcfesp:u:lb:" option; do
+while getopts "hvc:fesp:u:lb:" option; do
     case $option in
         h) echo_usage; usage_plugins; exit 0;;
         v) export HC_VERBOSE=true;;
         b) export HC_USR_SBIN_PATH=${OPTARG};;
-        c) COLOR="n";;
+        c) COLOR=${OPTARG};;
         f) OUTPUT_TO_FILE=true;;
         e) OUTPUT_TO_FILE=true; SEND_EMAIL=true;;
         s) SETUP_MODE=true;;
@@ -79,14 +77,32 @@ FS_USAGE=$(df -PThl -x tmpfs -x iso9660 -x devtmpfs -x squashfs|awk '!seen[$1]++
 IUSAGE=$(df -iPThl -x tmpfs -x iso9660 -x devtmpfs -x squashfs|awk '!seen[$1]++'|sort -k6n|tail -n +2)
 export HC_COLOR=$COLOR
 
-if [ $COLOR == y ]; then
+if [ "$COLOR" == "bash" ]; then
     {
+        S="\033[1m************************************\033[0m"
+        D="\033[1m----------------------------------------------\033[0m"
+        H1_BEGIN="\033[1m"
+        H1_END="\033[0m"
         GCOLOR="\e[47;32m ------ OK/HEALTHY \e[0m"
         WCOLOR="\e[43;31m ------ WARNING \e[0m"
         CCOLOR="\e[47;31m ------ CRITICAL \e[0m"
     }
+elif [ "$COLOR" == "html" ]; then    
+    {
+        S="<hr style=\"height:5px;border-width:2px;color:black;background-color:gray; width: 50%\">"
+        D="<hr />"
+        H1_BEGIN="<h1 style=\"text-align: center;\">"
+        H1_END="</h1>"
+        GCOLOR="<span style=\"color:green\"> ------ OK/HEALTHY </span>"
+        WCOLOR="<span style=\"color:orange\"> ------ WARNING </span>"
+        CCOLOR="<span style=\"color:red\"> ------ CRITICAL </span>"        
+    }
 else
     {
+        S="************************************"
+        D="----------------------------------------------"
+        H1_BEGIN=""
+        H1_END=""
         GCOLOR=" ------ OK/HEALTHY "
         WCOLOR=" ------ WARNING "
         CCOLOR=" ------ CRITICAL "
@@ -115,7 +131,7 @@ run_plugins() {
 
 health_check() {
     echo -e "$S"
-    echo -e "\tSystem Health Status"
+    echo -e "$H1_BEGIN\tSystem Health Status$H1_END"
     echo -e "$S"
     
     #--------Print Operating System Details--------#
@@ -146,14 +162,14 @@ health_check() {
     
     #--------Check for currently mounted file systems--------#
     echo -e "\n\nChecking For Currently Mounted File System[s]"
-    echo -e "$D$D"
+    echo -e "$D"
     echo "$MOUNT"|column -t
     
     #--------Check disk usage on all mounted file systems--------#
     echo -e "\n\nChecking For Disk Usage On Mounted File System[s]"
-    echo -e "$D$D"
+    echo -e "$D"
     echo -e "( 0-85% = OK/HEALTHY,  85-95% = WARNING,  95-100% = CRITICAL )"
-    echo -e "$D$D"
+    echo -e "$D"
     echo -e "Mounted File System[s] Utilization (Percentage Used):\n"
     
     COL1=$(echo "$FS_USAGE"|awk '{print $1 " "$7}')
@@ -191,9 +207,9 @@ health_check() {
     
     #--------Check Inode usage--------#
     echo -e "\n\nChecking For INode Usage"
-    echo -e "$D$D"
+    echo -e "$D"
     echo -e "( 0-85% = OK/HEALTHY,  85-95% = WARNING,  95-100% = CRITICAL )"
-    echo -e "$D$D"
+    echo -e "$D"
     echo -e "INode Utilization (Percentage Used):\n"
     
     COL11=$(echo "$IUSAGE"|awk '{print $1" "$7}')
@@ -241,24 +257,24 @@ health_check() {
     
     #------Print most recent 3 reboot events if available----#
     echo -e "\n\nMost Recent 3 Reboot Events"
-    echo -e "$D$D"
+    echo -e "$D"
     last -x 2> /dev/null|grep reboot 1> /dev/null && /usr/bin/last -x 2> /dev/null|grep reboot|head -3 || \
     echo -e "No reboot events are recorded."
     
     #------Print most recent 3 shutdown events if available-----#
     echo -e "\n\nMost Recent 3 Shutdown Events"
-    echo -e "$D$D"
+    echo -e "$D"
     last -x 2> /dev/null|grep shutdown 1> /dev/null && /usr/bin/last -x 2> /dev/null|grep shutdown|head -3 || \
     echo -e "No shutdown events are recorded."
     
     #--------Print top 5 Memory & CPU consumed process threads---------#
     #--------excludes current running program which is hwlist----------#
     echo -e "\n\nTop 5 Memory Resource Hog Processes"
-    echo -e "$D$D"
+    echo -e "$D"
     ps -eo pmem,pid,ppid,user,stat,args --sort=-pmem|grep -v $$|head -6|sed 's/$/\n/'
     
     echo -e "\nTop 5 CPU Resource Hog Processes"
-    echo -e "$D$D"
+    echo -e "$D"
     ps -eo pcpu,pid,ppid,user,stat,args --sort=-pcpu|grep -v $$|head -6|sed 's/$/\n/'    
 }
 
@@ -313,9 +329,20 @@ fi
 if $OUTPUT_TO_FILE ; then
   REPORT_DATE="$(date +%d-%m-%y-%H%M)"
   REPORT_FILE="/var/log/health-report/health-check-report-$REPORT_DATE.txt"  
-  health_check 1> $REPORT_FILE 2> /dev/null
+  if [ "$COLOR" == "html" ]; then
+    echo "<html><head><title>$MAIL_SUBJECT</title></head><body>" > $REPORT_FILE
+  fi 
+  health_check 1>> $REPORT_FILE 2> /dev/null
   run_plugins 1>> $REPORT_FILE 2> /dev/null
-  REPORT_CONTENT="$(cat $REPORT_FILE)"
+  if [ "$COLOR" == "html" ]; then
+    echo "</body></html>" >> $REPORT_FILE  
+    REPORT_CONTENT="$(cat $REPORT_FILE | sed ':a;N;$!ba;s#\n#<br />#g;s#^<br />##g')"
+    CONTENT_TYPE = "Content-Type: text/html; charset=us-ascii\n"
+  else
+    REPORT_CONTENT="$(cat $REPORT_FILE)"
+    CONTENT_TYPE = ""
+  fi
+  
   if $SEND_EMAIL ; then
     source $DIR/health-check.config
     echo $SMTP_SERVER
@@ -324,7 +351,8 @@ if $OUTPUT_TO_FILE ; then
          --mail-from "$MAIL_FROM" \
          --mail-rcpt "$MAIL_TO"  \
          --user "$MAIL_USER:$MAIL_UPASSWD" \
-         -T <(echo -e "From: $MAIL_FROM\nTo: $MAIL_TO\nSubject: $MAIL_SUBJECT\n\n$REPORT_CONTENT")
+         -T <(echo -e "From: $MAIL_FROM\nTo: $MAIL_TO\n$(CONTENT_TYPE)Subject: $MAIL_SUBJECT\n\n$REPORT_CONTENT")                  
+
   fi
 else
   health_check

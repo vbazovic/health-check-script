@@ -169,11 +169,17 @@ function smart() {
 }
 
 D="-------------------------------------"
-if [ "$HC_COLOR" == "y" ]; then
+if [ "$HC_COLOR" == "bash" ]; then
         ERR_MARK="\e[0;41m"
         WRN_MARK="\e[30;43m"
         OK_MARK="\e[30;42m"
         END_MARK="\e[0m"
+elif [ "$HC_COLOR" == "html" ]; then
+ERR_MARK="\e[0;41m"
+        ERR_MARK="<span style=\"color:red\">"
+        WRN_MARK="<span style=\"color:orange\">"
+        OK_MARK="<span style=\"color:green\">"
+        END_MARK="<.span>"
 else
         ERR_MARK="!!!"
         WRN_MARK="???"
