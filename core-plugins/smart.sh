@@ -179,7 +179,7 @@ ERR_MARK="\e[0;41m"
         ERR_MARK="<span style=\"color:red\">"
         WRN_MARK="<span style=\"color:orange\">"
         OK_MARK="<span style=\"color:green\">"
-        END_MARK="<.span>"
+        END_MARK="</span>"
 else
         ERR_MARK="!!!"
         WRN_MARK="???"
