@@ -294,6 +294,7 @@ log_rotate() {
  local content="/var/log/health-report/health-check-report-*.txt {                      
            missingok
            compress
+           notifempty
            maxage 90
        }"
     echo -e "$content"
