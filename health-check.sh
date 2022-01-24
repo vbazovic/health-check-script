@@ -338,21 +338,20 @@ if $OUTPUT_TO_FILE ; then
   if [ "$COLOR" == "html" ]; then
     echo "</body></html>" >> $REPORT_FILE  
     REPORT_CONTENT="$(cat $REPORT_FILE | sed ':a;N;$!ba;s#\n#<br />#g;s#^<br />##g')"
-    CONTENT_TYPE = "Content-Type: text/html; charset=us-ascii\n"
+    CONTENT_TYPE="Content-Type: text/html; charset=us-ascii\nMime-version: 1.0\n"
   else
     REPORT_CONTENT="$(cat $REPORT_FILE)"
-    CONTENT_TYPE = ""
+    CONTENT_TYPE=""
   fi
   
   if $SEND_EMAIL ; then
-    source $DIR/health-check.config
-    echo $SMTP_SERVER
+    source $DIR/health-check.config    
     curl --url "$SMTP_SERVER" \
          --ssl-reqd \
          --mail-from "$MAIL_FROM" \
          --mail-rcpt "$MAIL_TO"  \
          --user "$MAIL_USER:$MAIL_UPASSWD" \
-         -T <(echo -e "From: $MAIL_FROM\nTo: $MAIL_TO\n$(CONTENT_TYPE)Subject: $MAIL_SUBJECT\n\n$REPORT_CONTENT")                  
+         -T <(echo -e "From: $MAIL_FROM\nTo: $MAIL_TO\n${CONTENT_TYPE}Subject: $MAIL_SUBJECT\n\n$REPORT_CONTENT")                  
 
   fi
 else
